@@ -151,9 +151,12 @@ Mailbox links directly to Cloudflare's Email Routing engine to manage incoming a
 1. **Get your Cloudflare credentials**:
    - Go to your Cloudflare Dashboard.
    - Create an API Token under **My Profile > API Tokens** with permissions:
+     - `Zone - Zone: Read` (locate the zone ID for your domain)
      - `Zone - Zone Settings: Edit`
+     - `Zone - DNS: Edit` (read and write the MX and SPF records)
      - `Zone - Email Routing: Edit`
-     - `Zone - Workers Scripts: Edit`
+     - `Account - Workers Scripts: Edit` (the Worker is uploaded per account, not per zone)
+   - Under **Zone Resources**, include the domain you intend to link.
 2. **Link Domain in Mailbox Settings**:
    - Navigate to the **Settings** panel in the Mailbox UI.
    - Provide your **API Token**, select the active routing domain, and enter your application's public URL.

@@ -239,6 +239,25 @@ export const Icons = {
       React.createElement("title", null, "Chevron Up"),
       React.createElement("polyline", { points: "18 15 12 9 6 15" }),
     ),
+  Download: (props: React.SVGProps<SVGSVGElement>) =>
+    React.createElement(
+      "svg",
+      {
+        viewBox: "0 0 24 24",
+        width: "24",
+        height: "24",
+        fill: "none",
+        stroke: "currentColor",
+        strokeWidth: 1.5,
+        strokeLinecap: "round",
+        strokeLinejoin: "round",
+        ...props,
+      },
+      React.createElement("title", null, "Download"),
+      React.createElement("path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" }),
+      React.createElement("polyline", { points: "7 10 12 15 17 10" }),
+      React.createElement("line", { x1: "12", y1: "15", x2: "12", y2: "3" }),
+    ),
   Lock: (props: React.SVGProps<SVGSVGElement>) =>
     React.createElement(
       "svg",

@@ -1,3 +1,4 @@
+import { parseAttachmentsJson } from "@/lib/email-content";
 import { EmailRepository } from "@/repositories/email.repository";
 import { MailboxAddressRepository } from "@/repositories/mailbox-address.repository";
 import { UserRepository } from "@/repositories/user.repository";
@@ -13,6 +14,53 @@ function normaliseSubject(subject: string): string {
     .toLowerCase();
 }
 
+function toEmailWithState(
+  email: {
+    id: string;
+    mailboxAddressId: string;
+    messageId: string;
+    inReplyTo: string | null;
+    references: string | null;
+    threadKey: string | null;
+    fromAddress: string;
+    fromName: string | null;
+    subject: string;
+    bodyText: string;
+    bodyHtml: string | null;
+    attachmentsJson?: string | null;
+    receivedAt: Date;
+    mailboxAddress: { address: string; displayName: string | null };
+    readBy: unknown[];
+    savedBy: unknown[];
+    trashedBy: unknown[];
+  },
+  includeAttachmentContent: boolean,
+): EmailWithState {
+  const attachments = includeAttachmentContent
+    ? parseAttachmentsJson(email.attachmentsJson)
+    : [];
+
+  return {
+    id: email.id,
+    mailboxAddressId: email.mailboxAddressId,
+    messageId: email.messageId,
+    inReplyTo: email.inReplyTo,
+    references: email.references,
+    threadKey: email.threadKey ?? email.id,
+    fromAddress: email.fromAddress,
+    fromName: email.fromName,
+    subject: email.subject,
+    bodyText: email.bodyText,
+    bodyHtml: email.bodyHtml,
+    attachments,
+    receivedAt: email.receivedAt,
+    isRead: email.readBy.length > 0,
+    isSaved: email.savedBy.length > 0,
+    isTrashed: email.trashedBy.length > 0,
+    mailboxAddress: email.mailboxAddress,
+  };
+}
+
 export const EmailService = {
   // ── Inbound webhook ───────────────────────────────────────────────────────
 
@@ -23,8 +71,17 @@ export const EmailService = {
       throw new Error("Invalid email payload");
     }
 
-    const { messageId, from, to, subject, text, html, inReplyTo, references } =
-      parsed.data;
+    const {
+      messageId,
+      from,
+      to,
+      subject,
+      text,
+      html,
+      inReplyTo,
+      references,
+      attachments,
+    } = parsed.data;
 
     // 2. Dedup — if we've seen this messageId before, skip silently
     const existing = await EmailRepository.findByMessageId(messageId);
@@ -58,7 +115,11 @@ export const EmailService = {
       fromName: from.name,
       subject: resolvedSubject,
       bodyText: text || "",
-      bodyHtml: html,
+      bodyHtml: html ?? undefined,
+      attachmentsJson:
+        attachments && attachments.length > 0
+          ? JSON.stringify(attachments)
+          : null,
     });
   },
 
@@ -98,16 +159,7 @@ export const EmailService = {
     });
 
     // Attach per-user isRead / isSaved / isTrashed flags
-    const items = emails.map((email) => ({
-      ...email,
-      threadKey: email.threadKey ?? email.id,
-      isRead: email.readBy.length > 0,
-      isSaved: email.savedBy.length > 0,
-      isTrashed: email.trashedBy.length > 0,
-      readBy: undefined,
-      savedBy: undefined,
-      trashedBy: undefined,
-    }));
+    const items = emails.map((email) => toEmailWithState(email, false));
 
     return {
       items,
@@ -146,16 +198,9 @@ export const EmailService = {
     });
 
     // Attach per-user flags and strip Prisma join fields
-    const emails: EmailWithState[] = rawEmails.map((email) => ({
-      ...email,
-      threadKey: email.threadKey ?? email.id,
-      isRead: email.readBy.length > 0,
-      isSaved: email.savedBy.length > 0,
-      isTrashed: email.trashedBy.length > 0,
-      readBy: undefined,
-      savedBy: undefined,
-      trashedBy: undefined,
-    }));
+    const emails: EmailWithState[] = rawEmails.map((email) =>
+      toEmailWithState(email, true),
+    );
 
     // Group by threadKey, preserving insertion order (emails are asc by receivedAt)
     const threadMap = new Map<string, EmailWithState[]>();
@@ -211,16 +256,7 @@ export const EmailService = {
       }
     }
 
-    return {
-      ...email,
-      threadKey: email.threadKey ?? email.id,
-      isRead: email.readBy.length > 0,
-      isSaved: email.savedBy.length > 0,
-      isTrashed: email.trashedBy.length > 0,
-      readBy: undefined,
-      savedBy: undefined,
-      trashedBy: undefined,
-    };
+    return toEmailWithState(email, true);
   },
 
   // ── User actions ─────────────────────────────────────────────────────────

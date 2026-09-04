@@ -54,6 +54,17 @@ export interface MailboxAddress extends BaseEntity {
   cloudflareLinked: boolean;
 }
 
+export const InboundEmailAttachmentSchema = z.object({
+  filename: z.string().min(1),
+  contentType: z.string().min(1),
+  content: z.string().min(1),
+  contentId: z.string().optional(),
+  disposition: z.string().optional(),
+});
+export type InboundEmailAttachment = z.infer<
+  typeof InboundEmailAttachmentSchema
+>;
+
 // Email — does not extend BaseEntity because the model has no createdAt column
 // (it uses receivedAt instead). Only id is shared with BaseEntity.
 export interface Email {
@@ -68,6 +79,7 @@ export interface Email {
   subject: string;
   bodyText: string;
   bodyHtml: string | null;
+  attachments: InboundEmailAttachment[];
   receivedAt: Date;
 }
 
@@ -107,9 +119,11 @@ export const InboundEmailSchema = z.object({
   to: z.array(z.object({ address: z.string().email() })).min(1),
   subject: z.string().optional(),
   text: z.string().optional(),
-  html: z.string().optional(),
+  // The Cloudflare Worker sends `html: null` for plain-text-only messages.
+  html: z.string().nullish(),
   inReplyTo: z.string().optional(),
   references: z.string().optional(),
+  attachments: z.array(InboundEmailAttachmentSchema).max(40).optional(),
 });
 export type InboundEmailPayload = z.infer<typeof InboundEmailSchema>;
 

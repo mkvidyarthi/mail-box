@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import { Icons } from "@/components/icons";
+import { EmailRichBody } from "@/components/mailbox/EmailRichBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useEmailQuery } from "@/queries/useEmails";
@@ -242,10 +243,11 @@ export function GenericReadingPane({
             </div>
           </div>
 
-          {/* Email Body */}
-          <div className="text-[14px] text-primary-text leading-[1.55] space-y-4 whitespace-pre-line">
-            <p>{email.bodyText}</p>
-          </div>
+          <EmailRichBody
+            html={email.bodyHtml}
+            text={email.bodyText}
+            attachments={email.attachments}
+          />
         </div>
       </div>
     </div>

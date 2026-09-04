@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Icons } from "@/components/icons";
+import { EmailRichBody } from "@/components/mailbox/EmailRichBody";
 import { Avatar } from "@/components/ui/Avatar";
 import { Button } from "@/components/ui/Button";
 import { useMailboxAddressesQuery } from "@/queries/useMailboxAddresses";
@@ -333,33 +334,42 @@ function EmailBubble({
       {/* Expanded content */}
       {isExpanded && (
         <div className="px-2 mt-2">
-          {/* Body — only the new content in this reply */}
-          <div className="text-[14px] text-primary-text leading-[1.6] whitespace-pre-line">
-            {body || email.bodyText}
-          </div>
-
-          {/* Quoted block — collapsed behind a toggle */}
-          {quoted && (
-            <div className="mt-3">
-              <button
-                type="button"
-                onClick={() => setShowQuoted(!showQuoted)}
-                className="text-[11px] text-text-muted hover:text-text-secondary flex items-center gap-1 border border-border rounded-md px-2 py-0.5 transition-colors"
-              >
-                <span>···</span>
-                <span>
-                  {showQuoted ? "Hide quoted text" : "Show quoted text"}
-                </span>
-              </button>
-              {showQuoted && (
-                <div className="mt-2 pl-3 border-l-2 border-border text-[13px] text-text-muted whitespace-pre-line leading-normal">
-                  {quoted
-                    .split("\n")
-                    .map((line) => line.replace(/^>+\s?/, ""))
-                    .join("\n")}
+          {email.bodyHtml ? (
+            <EmailRichBody
+              html={email.bodyHtml}
+              text={body || email.bodyText}
+              attachments={email.attachments}
+            />
+          ) : (
+            <>
+              <EmailRichBody
+                html={null}
+                text={body || email.bodyText}
+                attachments={email.attachments}
+              />
+              {quoted && (
+                <div className="mt-3">
+                  <button
+                    type="button"
+                    onClick={() => setShowQuoted(!showQuoted)}
+                    className="text-[11px] text-text-muted hover:text-text-secondary flex items-center gap-1 border border-border rounded-md px-2 py-0.5 transition-colors"
+                  >
+                    <span>···</span>
+                    <span>
+                      {showQuoted ? "Hide quoted text" : "Show quoted text"}
+                    </span>
+                  </button>
+                  {showQuoted && (
+                    <div className="mt-2 pl-3 border-l-2 border-border text-[13px] text-text-muted whitespace-pre-line leading-normal">
+                      {quoted
+                        .split("\n")
+                        .map((line) => line.replace(/^>+\s?/, ""))
+                        .join("\n")}
+                    </div>
+                  )}
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
       )}

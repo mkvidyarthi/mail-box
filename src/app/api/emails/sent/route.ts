@@ -4,6 +4,7 @@ import { prisma } from "@/clients/prisma";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { AUTH_CONFIG } from "@/lib/auth";
 import { API_EMAIL_LIMIT } from "@/lib/constants";
+import { containsInsensitive } from "@/lib/db";
 import { SessionService } from "@/services/session.service";
 
 export async function GET(req: NextRequest) {
@@ -53,7 +54,7 @@ export async function GET(req: NextRequest) {
     const andConditions: Prisma.EmailJobWhereInput[] = [
       {
         OR: addresses.map((addr) => ({
-          fromAddress: { contains: addr, mode: "insensitive" },
+          fromAddress: containsInsensitive(addr),
         })),
       },
     ];
@@ -61,9 +62,9 @@ export async function GET(req: NextRequest) {
     if (search) {
       andConditions.push({
         OR: [
-          { subject: { contains: search, mode: "insensitive" } },
-          { bodyText: { contains: search, mode: "insensitive" } },
-          { to: { contains: search, mode: "insensitive" } },
+          { subject: containsInsensitive(search) },
+          { bodyText: containsInsensitive(search) },
+          { to: containsInsensitive(search) },
         ],
       });
     }

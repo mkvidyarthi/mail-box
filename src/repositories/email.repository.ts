@@ -16,6 +16,7 @@ export const EmailRepository = {
     subject: string;
     bodyText: string;
     bodyHtml?: string;
+    attachmentsJson?: string | null;
   }) {
     return prisma.email.create({ data });
   },
@@ -76,6 +77,7 @@ export const EmailRepository = {
         orderBy: { receivedAt: "desc" },
         skip: (page - 1) * limit,
         take: limit,
+        omit: { attachmentsJson: true },
         include: {
           mailboxAddress: { select: { address: true, displayName: true } },
           readBy: { where: { userId }, select: { userId: true } },

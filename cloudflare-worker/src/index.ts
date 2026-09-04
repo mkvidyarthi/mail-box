@@ -14,6 +14,23 @@ export interface EmailMessage {
   setReject(reason: string): void;
 }
 
+const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024;
+const MAX_TOTAL_ATTACHMENT_BYTES = 12 * 1024 * 1024;
+
+function arrayBufferToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+function stripContentId(contentId: string | undefined): string | undefined {
+  if (!contentId) return undefined;
+  return contentId.replace(/^<|>$/g, "").trim() || undefined;
+}
+
 export default {
   async email(
     message: EmailMessage,
@@ -27,27 +44,57 @@ export default {
         );
       }
 
-      // Read raw email message stream as an arrayBuffer
       const rawEmail = await new Response(message.raw).arrayBuffer();
-
-      // Parse email with postal-mime
       const parser = new PostalMime();
       const parsed = await parser.parse(rawEmail);
 
-      // Extract message ID (fallback to header or generated random ID)
       const messageId =
         parsed.messageId ||
         message.headers.get("message-id") ||
         `${Date.now()}-${crypto.randomUUID()}@email.routing`;
 
-      // Extract to address list (fallback to message.to)
       let toAddresses =
         (parsed.to?.map((t) => t.address).filter(Boolean) as string[]) || [];
       if (toAddresses.length === 0) {
         toAddresses = [message.to];
       }
 
-      // Build JSON payload matching Next.js InboundEmailSchema
+      const attachments: Array<{
+        filename: string;
+        contentType: string;
+        content: string;
+        contentId?: string;
+        disposition?: string;
+      }> = [];
+
+      let totalBytes = 0;
+      const parsedAttachments = parsed.attachments || [];
+      for (let i = 0; i < parsedAttachments.length; i++) {
+        const part = parsedAttachments[i];
+        const raw = part.content;
+        const bytes =
+          raw instanceof ArrayBuffer
+            ? new Uint8Array(raw)
+            : raw instanceof Uint8Array
+              ? raw
+              : null;
+        if (!bytes || bytes.byteLength === 0) continue;
+
+        const size = bytes.byteLength;
+        if (size > MAX_ATTACHMENT_BYTES) continue;
+        if (totalBytes + size > MAX_TOTAL_ATTACHMENT_BYTES) continue;
+
+        totalBytes += size;
+        const contentId = stripContentId(part.contentId);
+        attachments.push({
+          filename: part.filename || `attachment-${i + 1}`,
+          contentType: part.mimeType || "application/octet-stream",
+          content: arrayBufferToBase64(bytes),
+          ...(contentId ? { contentId } : {}),
+          ...(part.disposition ? { disposition: part.disposition } : {}),
+        });
+      }
+
       const payload = {
         messageId,
         from: {
@@ -58,9 +105,9 @@ export default {
         subject: parsed.subject || "(no subject)",
         text: parsed.text || "",
         html: parsed.html || null,
+        attachments,
       };
 
-      // POST to Next.js webhook API endpoint
       const baseUrl = env.NEXTJS_APP_URL.replace(/\/$/, "");
       const webhookUrl = `${baseUrl}/api/emails`;
 
@@ -81,7 +128,6 @@ export default {
       }
     } catch (error) {
       console.error("Error handling incoming email:", error);
-      // Re-throw so Cloudflare triggers a temporary failure/retry or bounce
       throw error;
     }
   },

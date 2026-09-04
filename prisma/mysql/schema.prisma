@@ -90,7 +90,8 @@ model Email {
   fromName         String?
   subject          String
   bodyText         String   @db.Text
-  bodyHtml         String?  @db.Text
+  bodyHtml         String?  @db.LongText
+  attachmentsJson  String?  @db.LongText // JSON-encoded inbound attachments (base64)
   receivedAt       DateTime @default(now())
 
   mailboxAddress MailboxAddress     @relation(fields: [mailboxAddressId], references: [id])

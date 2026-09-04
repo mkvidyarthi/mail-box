@@ -2,6 +2,7 @@ import type { NextRequest } from "next/server";
 import { prisma } from "@/clients/prisma";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { AUTH_CONFIG } from "@/lib/auth";
+import { DATABASE_ENGINE_LABELS, getDatabaseProvider } from "@/lib/db";
 import { SessionService } from "@/services/session.service";
 
 function maskDatabaseUrl(url: string | undefined): string {
@@ -15,7 +16,9 @@ function maskDatabaseUrl(url: string | undefined): string {
       parsed.password = "****";
     }
     return parsed.toString();
-  } catch (_e) {
+  } catch {
+    // DATABASE_URL is not always parseable as a URL — unexpanded ${VAR}
+    // placeholders from .env are common — so mask the password positionally.
     return url.replace(/:([^:@]+)@/, ":****@");
   }
 }
@@ -41,14 +44,7 @@ export async function GET(req: NextRequest) {
     const schemaPath =
       process.env.PRISMA_SCHEMA_PATH || "./prisma/sqlite/schema.prisma";
 
-    let dbEngine = "SQLite";
-    if (rawUrl) {
-      if (rawUrl.startsWith("postgres:") || rawUrl.startsWith("postgresql:")) {
-        dbEngine = "PostgreSQL";
-      } else if (rawUrl.startsWith("mysql:")) {
-        dbEngine = "MySQL";
-      }
-    }
+    const dbEngine = DATABASE_ENGINE_LABELS[getDatabaseProvider()];
 
     const userCount = await prisma.user.count();
     const sessionCount = await prisma.session.count();

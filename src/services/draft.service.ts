@@ -59,6 +59,7 @@ export const DraftService = {
         subject: draft.subject || "(no subject)",
         bodyText: draft.bodyText || "",
         bodyHtml: draft.bodyHtml || null,
+        attachments: [],
         receivedAt: draft.updatedAt, // Use updatedAt to sort
         isRead: true, // Drafts are read
         isSaved: false,

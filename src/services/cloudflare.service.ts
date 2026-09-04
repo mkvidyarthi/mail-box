@@ -44,6 +44,25 @@ interface CFRoutingRule {
   actions: CFRuleAction[];
 }
 
+// Cloudflare answers with code 10000 ("Authentication error") when the token is
+// valid but was created without the permission the endpoint requires, which is
+// indistinguishable from a bad token unless we name the missing scope.
+function cloudflareError(
+  status: number,
+  body: string,
+  action: string,
+  requiredPermission: string,
+): Error {
+  if (status === 401 || status === 403 || /"code":\s*10000/.test(body)) {
+    return new Error(
+      `${action} failed: your Cloudflare API token is missing the "${requiredPermission}" permission. ` +
+        `Add it under My Profile > API Tokens, then run the setup again.`,
+    );
+  }
+
+  return new Error(`${action} failed: ${body}`);
+}
+
 export const CloudflareService = {
   // ── Verification ─────────────────────────────────────────────────────────
 
@@ -70,8 +89,11 @@ export const CloudflareService = {
     });
 
     if (!res.ok) {
-      throw new Error(
-        `Failed to fetch Cloudflare accounts: ${await res.text()}`,
+      throw cloudflareError(
+        res.status,
+        await res.text(),
+        "Fetching Cloudflare accounts",
+        "Account > Account Settings > Read",
       );
     }
 
@@ -101,13 +123,19 @@ export const CloudflareService = {
     );
 
     if (!res.ok) {
-      throw new Error(`Failed to query Cloudflare zones: ${await res.text()}`);
+      throw cloudflareError(
+        res.status,
+        await res.text(),
+        "Querying Cloudflare zones",
+        "Zone > Zone > Read",
+      );
     }
 
     const data = await res.json();
     if (!data.success || !data.result || data.result.length === 0) {
+      // An empty list also happens when the token is scoped to other zones.
       throw new Error(
-        `Domain "${domainName}" not found in your Cloudflare account.`,
+        `Domain "${domainName}" not found in your Cloudflare account, or your API token is not scoped to that zone.`,
       );
     }
 
@@ -153,8 +181,11 @@ export const CloudflareService = {
     );
 
     if (!enableRes.ok) {
-      throw new Error(
-        `Failed to enable Email Routing: ${await enableRes.text()}`,
+      throw cloudflareError(
+        enableRes.status,
+        await enableRes.text(),
+        "Enabling Email Routing",
+        "Zone > Email Routing > Edit",
       );
     }
   },
@@ -173,7 +204,12 @@ export const CloudflareService = {
     );
 
     if (!dnsRes.ok) {
-      throw new Error(`Failed to fetch DNS records: ${await dnsRes.text()}`);
+      throw cloudflareError(
+        dnsRes.status,
+        await dnsRes.text(),
+        "Fetching DNS records",
+        "Zone > DNS > Edit",
+      );
     }
 
     const dnsData = await dnsRes.json();
@@ -224,8 +260,11 @@ export const CloudflareService = {
             );
             continue;
           }
-          throw new Error(
-            `Failed to create MX record for ${req.content}: ${errText}`,
+          throw cloudflareError(
+            createRes.status,
+            errText,
+            `Creating MX record for ${req.content}`,
+            "Zone > DNS > Edit",
           );
         }
       }
@@ -264,7 +303,12 @@ export const CloudflareService = {
             `Cloudflare is natively managing SPF records. Skipping manual creation.`,
           );
         } else {
-          throw new Error(`Failed to create SPF record: ${errText}`);
+          throw cloudflareError(
+            createRes.status,
+            errText,
+            "Creating SPF record",
+            "Zone > DNS > Edit",
+          );
         }
       }
     } else if (!spfRecord.content.includes(cloudflareSpf)) {
@@ -296,8 +340,11 @@ export const CloudflareService = {
       );
 
       if (!updateRes.ok) {
-        throw new Error(
-          `Failed to update existing SPF record: ${await updateRes.text()}`,
+        throw cloudflareError(
+          updateRes.status,
+          await updateRes.text(),
+          "Updating existing SPF record",
+          "Zone > DNS > Edit",
         );
       }
     }
@@ -345,8 +392,11 @@ export const CloudflareService = {
     });
 
     if (!uploadRes.ok) {
-      throw new Error(
-        `Failed to upload Worker script to Cloudflare: ${await uploadRes.text()}`,
+      throw cloudflareError(
+        uploadRes.status,
+        await uploadRes.text(),
+        "Uploading Worker script",
+        "Account > Workers Scripts > Edit",
       );
     }
 
@@ -367,8 +417,11 @@ export const CloudflareService = {
       });
 
       if (!secretRes.ok) {
-        throw new Error(
-          `Failed to bind Worker secret "${name}": ${await secretRes.text()}`,
+        throw cloudflareError(
+          secretRes.status,
+          await secretRes.text(),
+          `Binding Worker secret "${name}"`,
+          "Account > Workers Scripts > Edit",
         );
       }
     };
@@ -409,8 +462,11 @@ export const CloudflareService = {
     );
 
     if (!updateRes.ok) {
-      throw new Error(
-        `Failed to update catch-all rule: ${await updateRes.text()}`,
+      throw cloudflareError(
+        updateRes.status,
+        await updateRes.text(),
+        "Updating catch-all routing rule",
+        "Zone > Email Routing > Edit",
       );
     }
   },
@@ -431,7 +487,12 @@ export const CloudflareService = {
     );
 
     if (!res.ok && res.status !== 404) {
-      throw new Error(`Failed to delete worker: ${await res.text()}`);
+      throw cloudflareError(
+        res.status,
+        await res.text(),
+        "Deleting Worker script",
+        "Account > Workers Scripts > Edit",
+      );
     }
   },
 
@@ -450,37 +511,76 @@ export const CloudflareService = {
     );
 
     if (!rulesRes.ok) {
-      throw new Error(
-        `Failed to list email routing rules: ${await rulesRes.text()}`,
+      throw cloudflareError(
+        rulesRes.status,
+        await rulesRes.text(),
+        "Listing email routing rules",
+        "Zone > Email Routing > Edit",
       );
     }
 
     const rulesData = await rulesRes.json();
-    const rules = rulesData.result || [];
+    const rules: CFRoutingRule[] = rulesData.result || [];
 
-    const rule = rules.find((r: CFRoutingRule) =>
+    const rule = rules.find((r) =>
       r.actions?.some(
-        (a: CFRuleAction) =>
-          a.type === "worker" && a.value?.includes(workerName),
+        (a) => a.type === "worker" && a.value?.includes(workerName),
       ),
     );
 
-    if (rule) {
-      const delRes = await fetch(
-        `https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules/${rule.id}`,
+    if (!rule) return;
+
+    // configureRoutingRule installs the worker on the zone's catch-all rule.
+    // Cloudflare refuses to DELETE that rule (code 2020, "Invalid rule
+    // operation") because every zone always has one, so it has to be pointed
+    // away from the worker and disabled instead.
+    if (rule.matchers?.some((m) => m.type === "all")) {
+      const disableRes = await fetch(
+        `https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules/catch_all`,
         {
-          method: "DELETE",
+          method: "PUT",
           headers: {
             Authorization: `Bearer ${apiToken}`,
+            "Content-Type": "application/json",
           },
+          body: JSON.stringify({
+            name: rule.name,
+            enabled: false,
+            matchers: [{ type: "all" }],
+            actions: [{ type: "drop" }],
+          }),
         },
       );
 
-      if (!delRes.ok) {
-        throw new Error(
-          `Failed to delete routing rule: ${await delRes.text()}`,
+      if (!disableRes.ok) {
+        throw cloudflareError(
+          disableRes.status,
+          await disableRes.text(),
+          "Disabling catch-all routing rule",
+          "Zone > Email Routing > Edit",
         );
       }
+
+      return;
+    }
+
+    const delRes = await fetch(
+      `https://api.cloudflare.com/client/v4/zones/${zoneId}/email/routing/rules/${rule.id}`,
+      {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${apiToken}`,
+        },
+      },
+    );
+
+    if (!delRes.ok) {
+      throw cloudflareError(
+        delRes.status,
+        await delRes.text(),
+        "Deleting routing rule",
+        "Zone > Email Routing > Edit",
+      );
     }
   },
 };
