@@ -97,6 +97,18 @@ model Email {
   readBy         UserReadEmail[]
   savedBy        UserSavedEmail[]
   trashedBy      UserTrashedEmail[]
+  webhookEvents  ProcessedWebhookEvent[]
+}
+
+/// Idempotency key for inbound Cloudflare webhook deliveries.
+/// Survives email deletion so a provider retry cannot recreate the message.
+model ProcessedWebhookEvent {
+  id        String   @id @default(cuid())
+  eventKey  String   @unique
+  emailId   String?
+  createdAt DateTime @default(now())
+
+  email Email? @relation(fields: [emailId], references: [id], onDelete: SetNull)
 }
 
 /// Row exists = this user has read this email.

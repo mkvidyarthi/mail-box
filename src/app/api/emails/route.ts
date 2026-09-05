@@ -16,9 +16,12 @@ export async function POST(req: NextRequest) {
     }
 
     const payload = await req.json();
-    const email = await EmailService.processInbound(payload);
+    const result = await EmailService.processInbound(payload);
 
-    return apiSuccess({ email }, 201);
+    return apiSuccess(
+      { email: result.email, replayed: result.replayed },
+      result.replayed ? 200 : 201,
+    );
   } catch (error) {
     const message =
       error instanceof Error ? error.message : "Failed to process email";

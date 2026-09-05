@@ -48,10 +48,16 @@ export default {
       const parser = new PostalMime();
       const parsed = await parser.parse(rawEmail);
 
+      const deliveryHash = Array.from(
+        new Uint8Array(await crypto.subtle.digest("SHA-256", rawEmail)),
+      )
+        .map((byte) => byte.toString(16).padStart(2, "0"))
+        .join("");
+
       const messageId =
         parsed.messageId ||
         message.headers.get("message-id") ||
-        `${Date.now()}-${crypto.randomUUID()}@email.routing`;
+        `<sha256-${deliveryHash}@email.routing>`;
 
       let toAddresses =
         (parsed.to?.map((t) => t.address).filter(Boolean) as string[]) || [];
@@ -106,6 +112,7 @@ export default {
         text: parsed.text || "",
         html: parsed.html || null,
         attachments,
+        deliveryHash,
       };
 
       const baseUrl = env.NEXTJS_APP_URL.replace(/\/$/, "");

@@ -1,6 +1,20 @@
 import type { Prisma } from "@prisma/client";
 import { prisma } from "@/clients/prisma";
 import { API_EMAIL_LIMIT } from "@/lib/constants";
+import { isUniqueConstraintError } from "@/lib/webhook-replay";
+
+async function loadEmailForReplay(eventKey: string, messageId: string) {
+  const event = await prisma.processedWebhookEvent.findUnique({
+    where: { eventKey },
+  });
+  if (event?.emailId) {
+    const byEvent = await prisma.email.findUnique({
+      where: { id: event.emailId },
+    });
+    if (byEvent) return byEvent;
+  }
+  return prisma.email.findUnique({ where: { messageId } });
+}
 
 export const EmailRepository = {
   // ── Write ────────────────────────────────
@@ -23,6 +37,84 @@ export const EmailRepository = {
 
   async findByMessageId(messageId: string) {
     return prisma.email.findUnique({ where: { messageId } });
+  },
+
+  async findProcessedEvent(eventKey: string) {
+    return prisma.processedWebhookEvent.findUnique({
+      where: { eventKey },
+      include: { email: true },
+    });
+  },
+
+  async createInboundIdempotent(
+    eventKey: string,
+    data: {
+      mailboxAddressId: string;
+      messageId: string;
+      inReplyTo?: string;
+      references?: string;
+      threadKey: string;
+      fromAddress: string;
+      fromName?: string;
+      subject: string;
+      bodyText: string;
+      bodyHtml?: string;
+      attachmentsJson?: string | null;
+    },
+  ): Promise<{
+    email: {
+      id: string;
+      mailboxAddressId: string;
+      messageId: string;
+      inReplyTo: string | null;
+      references: string | null;
+      threadKey: string | null;
+      fromAddress: string;
+      fromName: string | null;
+      subject: string;
+      bodyText: string;
+      bodyHtml: string | null;
+      attachmentsJson: string | null;
+      receivedAt: Date;
+    } | null;
+    replayed: boolean;
+  }> {
+    const existingEvent = await prisma.processedWebhookEvent.findUnique({
+      where: { eventKey },
+    });
+    if (existingEvent) {
+      const email = await loadEmailForReplay(eventKey, data.messageId);
+      return { email, replayed: true };
+    }
+
+    try {
+      return await prisma.$transaction(async (tx) => {
+        const email = await tx.email.create({ data });
+        await tx.processedWebhookEvent.create({
+          data: { eventKey, emailId: email.id },
+        });
+        return { email, replayed: false };
+      });
+    } catch (error) {
+      if (!isUniqueConstraintError(error)) throw error;
+
+      const email = await loadEmailForReplay(eventKey, data.messageId);
+      if (email) {
+        await prisma.processedWebhookEvent.upsert({
+          where: { eventKey },
+          create: { eventKey, emailId: email.id },
+          update: { emailId: email.id },
+        });
+        return { email, replayed: true };
+      }
+
+      const event = await prisma.processedWebhookEvent.findUnique({
+        where: { eventKey },
+      });
+      if (event) return { email: null, replayed: true };
+
+      throw error;
+    }
   },
 
   // ── Read ─────────────────────────────────

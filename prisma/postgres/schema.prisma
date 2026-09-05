@@ -97,6 +97,16 @@ model Email {
   readBy         UserReadEmail[]
   savedBy        UserSavedEmail[]
   trashedBy      UserTrashedEmail[]
+  webhookEvents  ProcessedWebhookEvent[]
+}
+
+model ProcessedWebhookEvent {
+  id        String   @id @default(cuid())
+  eventKey  String   @unique
+  emailId   String?
+  createdAt DateTime @default(now())
+
+  email Email? @relation(fields: [emailId], references: [id], onDelete: SetNull)
 }
 
 /// Row exists = this user has read this email.

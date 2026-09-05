@@ -124,6 +124,10 @@ export const InboundEmailSchema = z.object({
   inReplyTo: z.string().optional(),
   references: z.string().optional(),
   attachments: z.array(InboundEmailAttachmentSchema).max(40).optional(),
+  deliveryHash: z
+    .string()
+    .regex(/^[0-9a-f]{64}$/i, "deliveryHash must be a SHA-256 hex digest")
+    .optional(),
 });
 export type InboundEmailPayload = z.infer<typeof InboundEmailSchema>;
 

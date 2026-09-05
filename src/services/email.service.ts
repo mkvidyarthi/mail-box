@@ -1,4 +1,5 @@
 import { parseAttachmentsJson } from "@/lib/email-content";
+import { inboundEventKey, stableMessageId } from "@/lib/webhook-replay";
 import { EmailRepository } from "@/repositories/email.repository";
 import { MailboxAddressRepository } from "@/repositories/mailbox-address.repository";
 import { UserRepository } from "@/repositories/user.repository";
@@ -72,7 +73,7 @@ export const EmailService = {
     }
 
     const {
-      messageId,
+      messageId: rawMessageId,
       from,
       to,
       subject,
@@ -81,13 +82,17 @@ export const EmailService = {
       inReplyTo,
       references,
       attachments,
+      deliveryHash,
     } = parsed.data;
 
-    // 2. Dedup — if we've seen this messageId before, skip silently
-    const existing = await EmailRepository.findByMessageId(messageId);
-    if (existing) return existing;
+    const messageId = stableMessageId(rawMessageId, deliveryHash);
+    const eventKey = inboundEventKey(deliveryHash, messageId);
 
-    // 3. Find the target mailbox address from the `to` list (must be active)
+    const seen = await EmailRepository.findProcessedEvent(eventKey);
+    if (seen) {
+      return { email: seen.email, replayed: true };
+    }
+
     let mailboxAddress = null;
     for (const recipient of to) {
       mailboxAddress = await MailboxAddressRepository.findByAddress(
@@ -103,9 +108,8 @@ export const EmailService = {
       );
     }
 
-    // 4. Store email
     const resolvedSubject = subject || "(no subject)";
-    return EmailRepository.create({
+    return EmailRepository.createInboundIdempotent(eventKey, {
       mailboxAddressId: mailboxAddress.id,
       messageId,
       inReplyTo,

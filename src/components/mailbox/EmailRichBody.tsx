@@ -71,7 +71,7 @@ export function EmailRichBody({
         <iframe
           ref={frameRef}
           className="email-html-frame"
-          sandbox="allow-same-origin allow-popups-to-escape-sandbox"
+          sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox"
           title="Email content"
           srcDoc={srcDoc}
           onLoad={handleLoad}

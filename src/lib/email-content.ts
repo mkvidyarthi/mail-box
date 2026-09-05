@@ -38,7 +38,7 @@ export function rewriteCidHtml(
 }
 
 export function wrapEmailHtmlDocument(html: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><style>
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank"><style>
     html,body{margin:0;padding:0;background:transparent;color:inherit;font:14px/1.55 system-ui,sans-serif;}
     img,video{max-width:100%;height:auto;}
     a{color:inherit;}
