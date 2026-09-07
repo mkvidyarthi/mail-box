@@ -31,6 +31,7 @@
     "role": "Role",
     "status": "Status",
     "actions": "Actions",
+    "delete": "Delete",
     "placeholder": {
       "title": "User Management is coming soon",
       "description": "This is a placeholder interface. Once the user management feature is completed, you will be able to add, edit, and deactivate accounts from this screen."

@@ -8,14 +8,17 @@ function getPrismaAdapter() {
     url = "file:./dev.db";
   }
 
-  if (
-    url.startsWith("file:") ||
-    url.startsWith("sqlite:") ||
-    url.startsWith("libsql:")
-  ) {
+  // For SQLite (file:), we don't need an adapter in Prisma 6
+  if (url.startsWith("file:") || url.startsWith("sqlite:")) {
+    return undefined;
+  }
+
+  // For libsql, use the adapter
+  if (url.startsWith("libsql:")) {
     return new PrismaLibSql({ url });
   }
 
+  // For PostgreSQL, use the adapter
   if (url.startsWith("postgres:") || url.startsWith("postgresql:")) {
     return new PrismaPg({ connectionString: url });
   }
@@ -29,8 +32,8 @@ const adapter = getPrismaAdapter();
 
 export const prisma =
   globalForPrisma.__prisma ||
-  new PrismaClient({
-    adapter: adapter as unknown as undefined,
-  });
+  new PrismaClient(
+    adapter ? { adapter: adapter as unknown as undefined } : undefined
+  );
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.__prisma = prisma;

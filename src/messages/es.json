@@ -31,6 +31,7 @@
     "role": "Rol",
     "status": "Estado",
     "actions": "Acciones",
+    "delete": "Eliminar",
     "placeholder": {
       "title": "La gestión de usuarios estará disponible pronto",
       "description": "Esta es una interfaz de marcador de posición. Una vez que se complete la función de administración de usuarios, podrá agregar, editar y desactivar cuentas desde esta pantalla."
