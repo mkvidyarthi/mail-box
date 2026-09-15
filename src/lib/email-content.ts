@@ -38,10 +38,15 @@ export function rewriteCidHtml(
 }
 
 export function wrapEmailHtmlDocument(html: string): string {
-  return `<!DOCTYPE html><html><head><meta charset="utf-8"><base target="_blank"><style>
-    html,body{margin:0;padding:0;background:transparent;color:inherit;font:14px/1.55 system-ui,sans-serif;}
-    img,video{max-width:100%;height:auto;}
+  return `<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><base target="_blank"><style>
+    html,body{margin:0;padding:0;background:transparent;color:inherit;font:14px/1.55 system-ui,sans-serif;overflow-x:hidden;}
+    *{box-sizing:border-box;max-width:100%;}
+    img,video{max-width:100%;height:auto;display:block;}
+    table{width:100%;max-width:100%;table-layout:fixed;}
+    td{word-wrap:break-word;overflow-wrap:break-word;}
     a{color:inherit;}
+    div,p{max-width:100%;overflow-wrap:break-word;}
+    body{width:100%;}
   </style></head><body>${html}</body></html>`;
 }
 

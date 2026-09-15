@@ -224,9 +224,9 @@ export default function PublicInboxPage({
             </div>
 
             {/* Right Side: Email Preview */}
-            <div className="hidden md:flex flex-1 min-w-0 bg-surface border border-border rounded-lg overflow-hidden">
+            <div className="hidden md:flex flex-1 min-w-[500px] bg-surface border border-border rounded-lg overflow-hidden">
               {selectedEmail ? (
-                <div className="flex flex-col h-full min-w-0">
+                <div className="flex flex-col h-full min-w-0 w-full">
                   <div className="p-4 border-b border-border shrink-0">
                     <h2 className="text-lg font-semibold text-text-primary mb-2">
                       {selectedEmail.subject}
@@ -240,7 +240,7 @@ export default function PublicInboxPage({
                       </p>
                     </div>
                   </div>
-                  <div className="flex-1 p-6 min-w-0 overflow-hidden">
+                  <div className="flex-1 p-6 min-w-0 overflow-auto">
                     <EmailRichBody
                       html={selectedEmail.bodyHtml}
                       text={selectedEmail.bodyText}

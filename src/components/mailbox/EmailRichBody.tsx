@@ -61,7 +61,7 @@ export function EmailRichBody({
     const frame = frameRef.current;
     const doc = frame?.contentDocument;
     if (!frame || !doc?.documentElement) return;
-    frame.style.height = 'auto';
+    // Let the iframe expand to fit content height
     frame.style.height = `${doc.documentElement.scrollHeight}px`;
   }, []);
 

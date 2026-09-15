@@ -125,9 +125,10 @@
 
 .email-html-frame {
   width: 100%;
-  height: auto;
+  min-height: 80px;
   border: 0;
   background: transparent;
+  display: block;
 }
 
 .email-plain-body {
