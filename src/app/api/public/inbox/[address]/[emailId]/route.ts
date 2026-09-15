@@ -6,6 +6,7 @@ import {
   validateBasicAuth,
 } from "@/lib/basic-auth";
 import { extractClientIP, inboxAccessLimiter } from "@/lib/rate-limiter";
+import { validateUsernameOrEmail } from "@/lib/abuse-protection";
 import { EmailRepository } from "@/repositories/email.repository";
 import { PublicMailboxService } from "@/services/public-mailbox.service";
 
@@ -17,6 +18,13 @@ export async function GET(
 ) {
   try {
     const { address, emailId } = await params;
+
+    // Normalize the address (handle both full emails and usernames)
+    const validation = validateUsernameOrEmail(address, "scems.in");
+    if (!validation.valid) {
+      return apiError(validation.error || "Invalid address", 400);
+    }
+    const normalizedAddress = validation.normalizedAddress || address;
 
     // Extract client IP for rate limiting
     const clientIP = extractClientIP(req.headers);
@@ -47,7 +55,7 @@ export async function GET(
     }
 
     // Get mailbox
-    const mailbox = await PublicMailboxService.getMailbox(address);
+    const mailbox = await PublicMailboxService.getMailbox(normalizedAddress);
     if (!mailbox) {
       return apiError("Mailbox not found", 404);
     }
@@ -64,7 +72,7 @@ export async function GET(
     }
 
     // Update mailbox access time
-    await PublicMailboxService.updateAccessTime(address);
+    await PublicMailboxService.updateAccessTime(normalizedAddress);
 
     return apiSuccess({
       email,

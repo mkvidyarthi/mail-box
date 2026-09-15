@@ -155,13 +155,18 @@ export default function PublicInboxPage({
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-bold text-text-primary">
-                {data.mailbox.displayName || decodedAddress}
+                {decodedAddress.split("@")[0]}
               </h1>
               <p className="text-sm text-text-secondary">{decodedAddress}</p>
             </div>
-            <Button onClick={handleRefresh} variant="ghost" size="icon">
-              <Icons.Refresh className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button onClick={() => router.push("/login")} variant="ghost" size="icon" title="Home">
+                <Icons.Home className="w-5 h-5" />
+              </Button>
+              <Button onClick={handleRefresh} variant="ghost" size="icon">
+                <Icons.Refresh className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
         </div>
       </div>

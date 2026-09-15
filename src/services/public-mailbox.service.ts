@@ -5,7 +5,7 @@
  * This service enables disposable email functionality similar to YOPmail.
  */
 
-import { validateEmailAddress } from "@/lib/abuse-protection";
+import { validateUsernameOrEmail } from "@/lib/abuse-protection";
 import { MailboxAddressRepository } from "@/repositories/mailbox-address.repository";
 import type { MailboxAddress } from "@/types";
 
@@ -18,13 +18,16 @@ export const PublicMailboxService = {
    */
   async getOrCreateMailbox(address: string, ipAddress?: string): Promise<MailboxAddress> {
     // Validate email format and check for reserved addresses
-    const validation = validateEmailAddress(address);
+    // Accept both full emails and usernames (will be normalized)
+    const validation = validateUsernameOrEmail(address, "scems.in");
     if (!validation.valid) {
       throw new Error(validation.error);
     }
 
+    const normalizedAddress = validation.normalizedAddress || address;
+
     // Try to find existing mailbox
-    const existing = await MailboxAddressRepository.findByAddress(address);
+    const existing = await MailboxAddressRepository.findByAddress(normalizedAddress);
     if (existing) {
       // Update access time
       await MailboxAddressRepository.updateAccessedAt(existing.id);
@@ -33,7 +36,7 @@ export const PublicMailboxService = {
 
     // Create new mailbox
     return MailboxAddressRepository.create({
-      address,
+      address: normalizedAddress,
       displayName: undefined,
       isActive: true,
       createdFromIp: ipAddress,
@@ -46,7 +49,11 @@ export const PublicMailboxService = {
    * @returns The mailbox address or null if not found
    */
   async getMailbox(address: string): Promise<MailboxAddress | null> {
-    const mailbox = await MailboxAddressRepository.findByAddress(address, true);
+    // Normalize the address first
+    const validation = validateUsernameOrEmail(address, "scems.in");
+    const normalizedAddress = validation.normalizedAddress || address;
+
+    const mailbox = await MailboxAddressRepository.findByAddress(normalizedAddress, true);
     if (!mailbox) {
       return null;
     }
@@ -67,13 +74,15 @@ export const PublicMailboxService = {
     error?: string;
   }> {
     // Check email format and reserved addresses
-    const validation = validateEmailAddress(address);
+    const validation = validateUsernameOrEmail(address, "scems.in");
     if (!validation.valid) {
       return validation;
     }
 
+    const normalizedAddress = validation.normalizedAddress || address;
+
     // Check if mailbox already exists
-    const existing = await MailboxAddressRepository.findByAddress(address);
+    const existing = await MailboxAddressRepository.findByAddress(normalizedAddress);
     if (existing) {
       return {
         valid: false,
@@ -89,7 +98,10 @@ export const PublicMailboxService = {
    * @param address - Email address to update
    */
   async updateAccessTime(address: string): Promise<void> {
-    const mailbox = await MailboxAddressRepository.findByAddress(address);
+    const validation = validateUsernameOrEmail(address, "scems.in");
+    const normalizedAddress = validation.normalizedAddress || address;
+
+    const mailbox = await MailboxAddressRepository.findByAddress(normalizedAddress);
     if (mailbox) {
       await MailboxAddressRepository.updateAccessedAt(mailbox.id);
     }

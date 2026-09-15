@@ -103,6 +103,56 @@ export function validateEmailAddress(email: string): {
 }
 
 /**
+ * Validate username or email address format and check for reserved addresses
+ * @param address - Username or full email address to validate
+ * @param defaultDomain - Default domain to append if address doesn't contain one
+ * @returns Object with validation result and error message if invalid
+ */
+export function validateUsernameOrEmail(address: string, defaultDomain?: string): {
+  valid: boolean;
+  error?: string;
+  normalizedAddress?: string;
+} {
+  // Check if address contains @
+  if (address.includes("@")) {
+    // It's a full email address - validate it
+    const emailValidation = validateEmailAddress(address);
+    if (!emailValidation.valid) {
+      return emailValidation;
+    }
+    return { valid: true, normalizedAddress: address.toLowerCase() };
+  }
+
+  // It's just a username - validate it and append default domain
+  if (!defaultDomain) {
+    return {
+      valid: false,
+      error: "Address must contain a domain or a default domain must be provided",
+    };
+  }
+
+  // Validate username characters
+  const usernameRegex = /^[a-zA-Z0-9._+-]+$/;
+  if (!usernameRegex.test(address)) {
+    return {
+      valid: false,
+      error: "Username contains invalid characters. Only letters, numbers, dots, underscores, hyphens, and plus signs are allowed.",
+    };
+  }
+
+  // Check for reserved addresses
+  if (isReservedAddress(address)) {
+    return {
+      valid: false,
+      error: `"${address}" is a reserved system address and cannot be used`,
+    };
+  }
+
+  const normalizedAddress = `${address.toLowerCase()}@${defaultDomain.toLowerCase()}`;
+  return { valid: true, normalizedAddress };
+}
+
+/**
  * Sanitize IP address for logging (protect privacy)
  * @param ip - IP address to sanitize
  * @returns Sanitized IP (last octet masked for IPv4, last segment for IPv6)

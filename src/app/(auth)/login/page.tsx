@@ -18,7 +18,7 @@ export default function LoginPage() {
     setLoading(true);
 
     const formData = new FormData(e.currentTarget);
-    const username = formData.get("username") as string;
+    let username = formData.get("username") as string;
 
     if (!username || username.trim() === "") {
       setError("Please enter a username");
@@ -26,9 +26,46 @@ export default function LoginPage() {
       return;
     }
 
+    // Trim whitespace
+    username = username.trim();
+
+    // Check if user provided a domain
+    if (username.includes("@")) {
+      const [localPart, domain] = username.split("@");
+      
+      // Validate domain is @scems.in
+      if (domain.toLowerCase() !== "scems.in") {
+        setError("Only @scems.in domain is allowed. Please enter username without domain.");
+        setLoading(false);
+        return;
+      }
+      
+      // Validate local part contains only email-valid characters
+      const emailValidRegex = /^[a-zA-Z0-9._+-]+$/;
+      if (!emailValidRegex.test(localPart)) {
+        setError("Username contains invalid characters. Only letters, numbers, dots, underscores, hyphens, and plus signs are allowed.");
+        setLoading(false);
+        return;
+      }
+      
+      // Use the full email as provided
+      username = `${localPart}@${domain.toLowerCase()}`;
+    } else {
+      // User didn't provide domain - validate username for email-valid characters
+      const emailValidRegex = /^[a-zA-Z0-9._+-]+$/;
+      if (!emailValidRegex.test(username)) {
+        setError("Username contains invalid characters. Only letters, numbers, dots, underscores, hyphens, and plus signs are allowed.");
+        setLoading(false);
+        return;
+      }
+      
+      // Auto-append @scems.in
+      username = `${username}@scems.in`;
+    }
+
     // Redirect to the inbox for this username
     // The inbox page will handle creating/accessing the mailbox
-    router.push(`/inbox/${username.trim()}`);
+    router.push(`/inbox/${username}`);
   };
 
   return (

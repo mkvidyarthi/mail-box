@@ -39,7 +39,7 @@ export default async function AuthLayout({
             </svg>
           </div>
           <h1 className="text-[28px] font-bold tracking-tight text-text-primary leading-tight">
-            Mailbox
+            SC Mailbox
           </h1>
         </div>
         {children}
