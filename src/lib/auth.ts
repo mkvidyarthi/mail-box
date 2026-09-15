@@ -14,6 +14,13 @@ export const AUTH_CONFIG = {
     cookieName: "auth_session",
   },
 
+  // Basic Authentication Configuration
+  basicAuth: {
+    username: process.env.BASIC_AUTH_USERNAME || "",
+    password: process.env.BASIC_AUTH_PASSWORD || "",
+    requiredForPublic: process.env.BASIC_AUTH_PUBLIC_REQUIRED === "true",
+  },
+
   // Tokens (Email Verification, Password Reset, etc.)
   tokens: {
     verificationExpiresInHours: 24, // How long an email verification link is valid

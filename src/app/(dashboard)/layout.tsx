@@ -1,13 +1,8 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import type React from "react";
 import { Suspense } from "react";
 import { getTranslations } from "next-intl/server";
 import { Navbar } from "@/components/mailbox/Navbar";
 import { Sidebar } from "@/components/mailbox/Sidebar";
-import { AUTH_CONFIG } from "@/lib/auth";
-import { UserRepository } from "@/repositories/user.repository";
-import { SessionService } from "@/services/session.service";
 
 export async function generateMetadata() {
   const t = await getTranslations("Metadata.inbox");
@@ -22,25 +17,9 @@ export default async function DashboardLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(AUTH_CONFIG.session.cookieName)?.value;
-
-  // 1. Check if setup is complete
-  const ownerCount = await UserRepository.countOwners();
-  if (ownerCount === 0) {
-    redirect("/setup");
-  }
-
-  // 2. If no session cookie, redirect to login
-  if (!sessionToken) {
-    redirect("/login");
-  }
-
-  // 3. Validate session in DB
-  const sessionData = await SessionService.getSessionAndUser(sessionToken);
-  if (!sessionData) {
-    redirect("/login");
-  }
+  // Remove session-based authentication for YOPmail-style public access
+  // The dashboard is now accessible without login for disposable mailbox functionality
+  // Admin features can still be protected via separate routes if needed
 
   return (
     <main className="flex h-screen w-full overflow-hidden bg-background">

@@ -1,8 +1,4 @@
-import { cookies } from "next/headers";
-import { redirect } from "next/navigation";
 import type React from "react";
-import { AUTH_CONFIG } from "@/lib/auth";
-import { SessionService } from "@/services/session.service";
 import { getTranslations } from "next-intl/server";
 
 export async function generateMetadata() {
@@ -18,15 +14,8 @@ export default async function AuthLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get(AUTH_CONFIG.session.cookieName)?.value;
-
-  if (sessionToken) {
-    const sessionData = await SessionService.getSessionAndUser(sessionToken);
-    if (sessionData) {
-      redirect("/");
-    }
-  }
+  // Remove session check for YOPmail-style public access
+  // Users can now access their inbox with just a username
 
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center p-6 select-none">

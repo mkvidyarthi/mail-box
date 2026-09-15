@@ -1,6 +1,7 @@
 // LAYER 2: SERVICE
 // Business logic, format validation, address uniqueness, and role checks.
 
+import { isReservedAddress, validateEmailAddress } from "@/lib/abuse-protection";
 import { MailboxAddressRepository } from "@/repositories/mailbox-address.repository";
 
 // Simple email regex validation
@@ -13,7 +14,7 @@ export const MailboxAddressService = {
 
   async create(
     userRole: string,
-    data: { address: string; displayName?: string; isActive?: boolean },
+    data: { address: string; displayName?: string; isActive?: boolean; createdFromIp?: string },
   ) {
     // 1. RBAC check (Only OWNER and ADMIN can create)
     if (userRole !== "OWNER" && userRole !== "ADMIN") {
@@ -25,7 +26,13 @@ export const MailboxAddressService = {
       throw new Error("Invalid email address format");
     }
 
-    // 3. Verify uniqueness
+    // 3. Check for reserved addresses
+    const addressValidation = validateEmailAddress(data.address);
+    if (!addressValidation.valid) {
+      throw new Error(addressValidation.error || "Invalid email address");
+    }
+
+    // 4. Verify uniqueness
     const existing = await MailboxAddressRepository.findByAddress(data.address);
     if (existing) {
       throw new Error("Mailbox address already exists");
@@ -55,7 +62,13 @@ export const MailboxAddressService = {
         throw new Error("Invalid email address format");
       }
 
-      // 3. Verify uniqueness
+      // 3. Check for reserved addresses
+      const addressValidation = validateEmailAddress(data.address);
+      if (!addressValidation.valid) {
+        throw new Error(addressValidation.error || "Invalid email address");
+      }
+
+      // 4. Verify uniqueness
       const existing = await MailboxAddressRepository.findByAddress(
         data.address,
       );

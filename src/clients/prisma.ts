@@ -30,10 +30,10 @@ const globalForPrisma = globalThis as unknown as { __prisma: PrismaClient };
 
 const adapter = getPrismaAdapter();
 
+const prismaClientOptions = adapter ? { adapter } : undefined;
+
 export const prisma =
   globalForPrisma.__prisma ||
-  new PrismaClient(
-    adapter ? { adapter: adapter as unknown as undefined } : undefined
-  );
+  new PrismaClient(prismaClientOptions as any);
 
 if (process.env.NODE_ENV !== "production") globalForPrisma.__prisma = prisma;

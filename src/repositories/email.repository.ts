@@ -234,14 +234,17 @@ export const EmailRepository = {
     });
   },
 
-  async findById(id: string, userId: string) {
+  async findById(id: string, userId?: string) {
+    // For public access, don't include user-specific relations
+    const isPublicAccess = !userId || userId === "public";
+
     return prisma.email.findUnique({
       where: { id },
       include: {
         mailboxAddress: { select: { address: true, displayName: true } },
-        readBy: { where: { userId }, select: { userId: true } },
-        savedBy: { where: { userId }, select: { userId: true } },
-        trashedBy: { where: { userId }, select: { userId: true } },
+        readBy: isPublicAccess ? undefined : { where: { userId }, select: { userId: true } },
+        savedBy: isPublicAccess ? undefined : { where: { userId }, select: { userId: true } },
+        trashedBy: isPublicAccess ? undefined : { where: { userId }, select: { userId: true } },
       },
     });
   },
@@ -288,6 +291,30 @@ export const EmailRepository = {
     return prisma.userTrashedEmail
       .delete({ where: { userId_emailId: { userId, emailId } } })
       .catch(() => null);
+  },
+
+  // ── Public access (no user filtering) ─────
+
+  async findManyByMailboxAddress(mailboxAddressId: string, opts: {
+    limit?: number;
+    offset?: number;
+  } = {}) {
+    const { limit = 50, offset = 0 } = opts;
+
+    const [emails, total] = await Promise.all([
+      prisma.email.findMany({
+        where: { mailboxAddressId },
+        orderBy: { receivedAt: "desc" },
+        skip: offset,
+        take: limit,
+        include: {
+          mailboxAddress: { select: { address: true, displayName: true } },
+        },
+      }),
+      prisma.email.count({ where: { mailboxAddressId } }),
+    ]);
+
+    return { emails, total, limit, offset };
   },
 
   // ── Hard delete ──────────────────────────

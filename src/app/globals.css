@@ -125,7 +125,7 @@
 
 .email-html-frame {
   width: 100%;
-  min-height: 80px;
+  height: auto;
   border: 0;
   background: transparent;
 }

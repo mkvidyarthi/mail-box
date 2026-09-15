@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   /* config options here */
   reactCompiler: true,
   output: "standalone",
+  allowedDevOrigins: ['scems.in'],
   async headers() {
     return [
       {

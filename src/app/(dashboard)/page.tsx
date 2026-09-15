@@ -1,188 +1,69 @@
 "use client";
 
-import { useRouter, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
-import { Suspense, useState } from "react";
-import { Icons } from "@/components/icons";
-import { ThreadMailboxLayout } from "@/components/mailbox/ThreadMailboxLayout";
-import { ConfirmationDialog } from "@/components/ui/ConfirmationDialog";
-import {
-  useBulkUpdateEmailsMutation,
-  useThreadsQuery,
-  useUpdateEmailMutation,
-} from "@/queries/useEmails";
-import { useAppStore } from "@/store/useAppStore";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 
-function MailboxContent() {
+// Username input form for YOPmail-style access
+function UsernameInputForm() {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const threadKey = searchParams.get("threadKey") ?? undefined;
-  const searchQuery = searchParams.get("search") || undefined;
+  const [username, setUsername] = useState("");
+  const [error, setError] = useState<string | null>(null);
 
-  const t = useTranslations("Sidebar");
-  const tInbox = useTranslations("Inbox");
-  const { addToast } = useAppStore();
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
 
-  const [pendingTrashIds, setPendingTrashIds] = useState<string[]>([]);
+    if (!username || username.trim() === "") {
+      setError("Please enter a username");
+      return;
+    }
 
-  const { data, isLoading, isError } = useThreadsQuery({
-    trashed: false,
-    search: searchQuery,
-  });
-
-  const threads = data?.threads || [];
-
-  const updateEmail = useUpdateEmailMutation();
-  const bulkUpdateEmail = useBulkUpdateEmailsMutation();
-
-  const handleTrash = (id: string) => {
-    setPendingTrashIds([id]);
-  };
-
-  const handleBulkTrash = (ids: string[]) => {
-    setPendingTrashIds(ids);
-  };
-
-  const executeTrash = (ids: string[]) => {
-    bulkUpdateEmail.mutate(
-      { ids, action: "trash" },
-      {
-        onSuccess: () => {
-          const count = ids.length;
-          addToast(
-            count > 1
-              ? tInbox("bulkTrashSuccess", { count })
-              : tInbox("trashSuccess"),
-            "success",
-          );
-          // If the active thread contained a trashed message, deselect it
-          if (threadKey) {
-            const activeThread = threads.find((t) => t.threadKey === threadKey);
-            if (activeThread?.emails.some((e) => ids.includes(e.id))) {
-              router.push("/");
-            }
-          }
-        },
-        onError: () => addToast(tInbox("trashError"), "error"),
-      },
-    );
-  };
-
-  const handleRead = (id: string) => {
-    updateEmail.mutate({ id, action: "read" });
-  };
-
-  const handleUnread = (id: string) => {
-    updateEmail.mutate(
-      { id, action: "unread" },
-      {
-        onSuccess: () => addToast(tInbox("unreadSuccess"), "success"),
-        onError: () => addToast(tInbox("unreadError"), "error"),
-      },
-    );
-  };
-
-  const handleStar = (id: string) => {
-    updateEmail.mutate(
-      { id, action: "save" },
-      {
-        onSuccess: () => addToast(tInbox("starSuccess"), "success"),
-        onError: () => addToast(tInbox("starError"), "error"),
-      },
-    );
-  };
-
-  const handleUnstar = (id: string) => {
-    updateEmail.mutate(
-      { id, action: "unsave" },
-      {
-        onSuccess: () => addToast(tInbox("unstarSuccess"), "success"),
-        onError: () => addToast(tInbox("unstarError"), "error"),
-      },
-    );
-  };
-
-  const handleBulkRead = (ids: string[]) => {
-    bulkUpdateEmail.mutate(
-      { ids, action: "read" },
-      {
-        onSuccess: () => addToast(tInbox("bulkReadSuccess"), "success"),
-        onError: () => addToast(tInbox("bulkReadError"), "error"),
-      },
-    );
-  };
-
-  const handleBulkUnread = (ids: string[]) => {
-    bulkUpdateEmail.mutate(
-      { ids, action: "unread" },
-      {
-        onSuccess: () => addToast(tInbox("bulkUnreadSuccess"), "success"),
-        onError: () => addToast(tInbox("bulkUnreadError"), "error"),
-      },
-    );
+    // Redirect to the inbox for this username
+    // Use encodeURIComponent to handle special characters like @
+    router.push(`/inbox/${encodeURIComponent(username.trim())}`);
   };
 
   return (
-    <>
-      <ThreadMailboxLayout
-        threads={threads}
-        isLoading={isLoading}
-        isError={isError}
-        selectedThreadKey={threadKey}
-        folder="inbox"
-        onTrashEmail={handleTrash}
-        onReadEmail={handleRead}
-        onUnreadEmail={handleUnread}
-        onStarEmail={handleStar}
-        onUnstarEmail={handleUnstar}
-        onBulkTrash={handleBulkTrash}
-        onBulkRead={handleBulkRead}
-        onBulkUnread={handleBulkUnread}
-        title={t("inbox")}
-        emptyStateTitle={tInbox("emptyStateTitle")}
-        emptyStateDescription={tInbox("emptyStateDescription")}
-        emptyStateIcon={<Icons.Mail className="w-7 h-7 text-text-muted" />}
-      />
-
-      <ConfirmationDialog
-        isOpen={pendingTrashIds.length > 0}
-        title={
-          pendingTrashIds.length > 1
-            ? tInbox("dialogTitleBulk")
-            : tInbox("dialogTitleSingle")
-        }
-        message={
-          pendingTrashIds.length > 1
-            ? tInbox("dialogMessageBulk", { count: pendingTrashIds.length })
-            : tInbox("dialogMessageSingle")
-        }
-        confirmLabel={tInbox("confirmLabel")}
-        cancelLabel={tInbox("cancelLabel")}
-        variant="destructive"
-        onConfirm={() => {
-          if (pendingTrashIds.length > 0) {
-            executeTrash(pendingTrashIds);
-            setPendingTrashIds([]);
-          }
-        }}
-        onCancel={() => setPendingTrashIds([])}
-      />
-    </>
+    <div className="flex flex-col items-center justify-center h-full bg-background">
+      <div className="w-full max-w-md p-6">
+        <div className="text-center mb-6">
+          <h1 className="text-2xl font-bold text-text-primary mb-2">Disposable Mailbox</h1>
+          <p className="text-text-secondary">Enter your username to access your inbox</p>
+        </div>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
+          {error && (
+            <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded">
+              {error}
+            </div>
+          )}
+          <div>
+            <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-2">
+              Username
+            </label>
+            <input
+              id="username"
+              type="text"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              placeholder="Enter username (e.g., user1@scems.in)"
+              className="w-full px-3 py-2 border border-border rounded-md focus:outline-none focus:ring-2 focus:ring-accent"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="w-full bg-accent text-white py-2 px-4 rounded-md hover:bg-accent/90 transition-colors"
+          >
+            Open Inbox
+          </button>
+        </form>
+      </div>
+    </div>
   );
 }
 
 export default function Home() {
-  const tInbox = useTranslations("Inbox");
-
-  return (
-    <Suspense
-      fallback={
-        <div className="h-full flex items-center justify-center bg-background text-text-secondary text-sm">
-          {tInbox("loading")}
-        </div>
-      }
-    >
-      <MailboxContent />
-    </Suspense>
-  );
+  // Show username input form for YOPmail-style access
+  // The actual mailbox content will be shown at /inbox/[username]
+  return <UsernameInputForm />;
 }

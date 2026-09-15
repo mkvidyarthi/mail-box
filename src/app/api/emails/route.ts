@@ -1,6 +1,10 @@
 import type { NextRequest } from "next/server";
 import { apiError, apiSuccess } from "@/lib/api-response";
 import { AUTH_CONFIG } from "@/lib/auth";
+import {
+  generateBasicAuthHeaders,
+  validateBasicAuth,
+} from "@/lib/basic-auth";
 import { API_EMAIL_LIMIT } from "@/lib/constants";
 import { EmailService } from "@/services/email.service";
 import { SessionService } from "@/services/session.service";

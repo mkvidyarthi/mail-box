@@ -1,4 +1,9 @@
 import { parseAttachmentsJson } from "@/lib/email-content";
+import {
+  validateAttachmentCount,
+  validateAttachmentSize,
+  validateEmailSize,
+} from "@/lib/email-limits";
 import { inboundEventKey, stableMessageId } from "@/lib/webhook-replay";
 import { EmailRepository } from "@/repositories/email.repository";
 import { MailboxAddressRepository } from "@/repositories/mailbox-address.repository";
@@ -15,7 +20,7 @@ function normaliseSubject(subject: string): string {
     .toLowerCase();
 }
 
-function toEmailWithState(
+export function toEmailWithState(
   email: {
     id: string;
     mailboxAddressId: string;
@@ -31,9 +36,9 @@ function toEmailWithState(
     attachmentsJson?: string | null;
     receivedAt: Date;
     mailboxAddress: { address: string; displayName: string | null };
-    readBy: unknown[];
-    savedBy: unknown[];
-    trashedBy: unknown[];
+    readBy?: unknown[];
+    savedBy?: unknown[];
+    trashedBy?: unknown[];
   },
   includeAttachmentContent: boolean,
 ): EmailWithState {
@@ -55,9 +60,9 @@ function toEmailWithState(
     bodyHtml: email.bodyHtml,
     attachments,
     receivedAt: email.receivedAt,
-    isRead: email.readBy.length > 0,
-    isSaved: email.savedBy.length > 0,
-    isTrashed: email.trashedBy.length > 0,
+    isRead: (email.readBy?.length || 0) > 0,
+    isSaved: (email.savedBy?.length || 0) > 0,
+    isTrashed: (email.trashedBy?.length || 0) > 0,
     mailboxAddress: email.mailboxAddress,
   };
 }
@@ -84,6 +89,31 @@ export const EmailService = {
       attachments,
       deliveryHash,
     } = parsed.data;
+
+    // 2. Validate attachment count
+    if (attachments && !validateAttachmentCount(attachments.length)) {
+      throw new Error(
+        `Too many attachments. Maximum allowed: ${process.env.MAX_ATTACHMENTS || 5}`,
+      );
+    }
+
+    // 3. Validate individual attachment sizes
+    if (attachments) {
+      for (const attachment of attachments) {
+        if (!validateAttachmentSize(attachment)) {
+          throw new Error(
+            `Attachment "${attachment.filename}" exceeds maximum size of ${process.env.MAX_ATTACHMENT_SIZE_MB || 4}MB`,
+          );
+        }
+      }
+    }
+
+    // 4. Validate total email size
+    if (!validateEmailSize(text || "", html, attachments || [])) {
+      throw new Error(
+        `Email exceeds maximum size of ${process.env.MAX_EMAIL_SIZE_MB || 10}MB`,
+      );
+    }
 
     const messageId = stableMessageId(rawMessageId, deliveryHash);
     const eventKey = inboundEventKey(deliveryHash, messageId);
@@ -296,6 +326,55 @@ export const EmailService = {
     }
 
     return { action, emailId };
+  },
+
+  // ── List stacked (non-threaded) ──────────────────────────────────────────
+  // Returns emails in chronological order without grouping by thread.
+  // Used for public inbox display where threading is not desired.
+
+  async listStacked(
+    userId: string,
+    opts: {
+      search?: string;
+      page?: number;
+      limit?: number;
+      trashed?: boolean;
+      starred?: boolean;
+    },
+  ) {
+    const user = await UserRepository.findUserById(userId);
+    if (!user) throw new Error("User not found");
+
+    let allowedMailboxIds: string[] | undefined;
+    if (user.role !== "OWNER") {
+      allowedMailboxIds = user.mailboxAccess.map((ma) => ma.mailboxAddressId);
+      if (allowedMailboxIds.length === 0) {
+        return {
+          items: [],
+          total: 0,
+          page: opts.page || 1,
+          limit: opts.limit || 10,
+          totalPages: 0,
+        };
+      }
+    }
+
+    const { emails, total, page, limit } = await EmailRepository.findMany({
+      userId,
+      allowedMailboxIds,
+      ...opts,
+    });
+
+    // Attach per-user isRead / isSaved / isTrashed flags
+    const items = emails.map((email) => toEmailWithState(email, false));
+
+    return {
+      items,
+      total,
+      page,
+      limit,
+      totalPages: Math.ceil(total / limit),
+    };
   },
 
   // ── Hard delete ──────────────────────────────────────────────────────────

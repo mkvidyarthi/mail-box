@@ -52,6 +52,8 @@ export interface MailboxAddress extends BaseEntity {
   displayName: string | null;
   isActive: boolean;
   cloudflareLinked: boolean;
+  createdFromIp: string | null;
+  accessedAt: Date | null;
 }
 
 export const InboundEmailAttachmentSchema = z.object({

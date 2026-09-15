@@ -29,6 +29,7 @@ export const MailboxAddressRepository = {
     address: string;
     displayName?: string;
     isActive?: boolean;
+    createdFromIp?: string;
   }) {
     return prisma.mailboxAddress.create({
       data,
@@ -65,6 +66,13 @@ export const MailboxAddressRepository = {
     return prisma.mailboxAddress.update({
       where: { id },
       data: { isActive: false },
+    });
+  },
+
+  async updateAccessedAt(id: string) {
+    return prisma.mailboxAddress.update({
+      where: { id },
+      data: { accessedAt: new Date() },
     });
   },
 };

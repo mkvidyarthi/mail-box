@@ -58,6 +58,8 @@ model MailboxAddress {
   displayName      String?
   isActive         Boolean  @default(true)
   cloudflareLinked Boolean  @default(false)
+  accessedAt       DateTime @default(now())
+  createdFromIp    String?
   createdAt        DateTime @default(now())
 
   emails     Email[]
