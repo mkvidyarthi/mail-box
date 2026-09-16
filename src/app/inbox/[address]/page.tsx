@@ -238,10 +238,13 @@ export default function PublicInboxPage({
                     </h2>
                     <div className="text-sm text-text-secondary space-y-1">
                       <p>
-                        <strong>From:</strong> {selectedEmail.fromName || selectedEmail.fromAddress}
+                        <strong>From:</strong> {selectedEmail.fromName} [{selectedEmail.fromAddress}]
                       </p>
                       <p>
                         <strong>Date:</strong> {new Date(selectedEmail.receivedAt).toLocaleString()}
+                      </p>
+                      <p>
+                        <strong>Sent to:</strong> {decodedAddress || 'Unknown'}
                       </p>
                     </div>
                   </div>
