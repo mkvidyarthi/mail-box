@@ -269,7 +269,7 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
                     <button
                       type="button"
                       onClick={() => toggleGroup(dateLabel)}
-                      className="w-full flex items-center justify-between px-3 py-2 bg-surface hover:bg-surface-hover border-b border-border text-left"
+                        className="w-full flex items-center justify-between px-3 py-2 bg-surface hover:bg-surface-hover border-b border-border text-left cursor-pointer"
                     >
                       <div className="flex items-center gap-2">
                         <Icons.ChevronRight
