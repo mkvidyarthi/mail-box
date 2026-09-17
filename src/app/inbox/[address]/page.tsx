@@ -233,7 +233,7 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
       )}
 
       {/* Split View */}
-  <div className="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 lg:px-8 py-6 overflow-hidden">
+  <div className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-1 overflow-hidden">
     {data.emails.length === 0 ? (
       <div className="text-center py-12">
         <Icons.Mail className="w-16 h-16 text-text-muted mx-auto mb-4" />
@@ -381,23 +381,25 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
         {/* Mobile */}
         {/* ============================= */}
         <div className="md:hidden h-full flex flex-col overflow-hidden">
+          {/* Open Inbox Drawer */}
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            title="Open inbox"
+            className="shrink-0"
+          >
+            <Icons.Menu className="w-5 h-5" />
+          </Button>
           {/* Mobile Email Preview */}
           <div className="flex-1 min-h-0 bg-surface border border-border rounded-lg overflow-hidden flex flex-col">
             {selectedEmail ? (
-              <>
+              <>                    
+              
                 {/* Mobile Preview Header */}
                 <div className="p-4 border-b border-border shrink-0">
                   <div className="flex items-start gap-3">
-                    {/* Open Inbox Drawer */}
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => setIsMobileDrawerOpen(true)}
-                      title="Open inbox"
-                      className="shrink-0"
-                    >
-                      <Icons.Mail className="w-5 h-5" />
-                    </Button>
+
 
                     <div className="min-w-0 flex-1">
                       <h2 className="text-lg font-semibold text-text-primary mb-2">
