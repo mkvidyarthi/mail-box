@@ -120,6 +120,18 @@ export function validateUsernameOrEmail(address: string, defaultDomain?: string)
     if (!emailValidation.valid) {
       return emailValidation;
     }
+
+    // If a default domain is provided, validate that the email domain matches
+    if (defaultDomain) {
+      const emailDomain = address.split("@")[1]?.toLowerCase();
+      if (emailDomain !== defaultDomain.toLowerCase()) {
+        return {
+          valid: false,
+          error: `Only the ${defaultDomain} domain is allowed`,
+        };
+      }
+    }
+
     return { valid: true, normalizedAddress: address.toLowerCase() };
   }
 
