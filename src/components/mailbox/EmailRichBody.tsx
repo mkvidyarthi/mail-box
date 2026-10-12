@@ -16,7 +16,28 @@ function formatBytes(base64: string): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-function EmailAttachmentList({
+function getFileIcon(filename: string) {
+  const ext = filename.split('.').pop()?.toLowerCase() || '';
+
+  switch (ext) {
+    case 'zip':
+    case 'rar':
+    case '7z':
+      return Icons.FileZip;
+    case 'png':
+    case 'jpg':
+    case 'jpeg':
+    case 'gif':
+    case 'svg':
+    case 'webp':
+    case 'bmp':
+      return Icons.Image;
+    default:
+      return Icons.File;
+  }
+}
+
+export function EmailAttachmentList({
   attachments,
 }: Readonly<{
   attachments: InboundEmailAttachment[];
@@ -26,22 +47,25 @@ function EmailAttachmentList({
 
   return (
     <ul className="email-attachment-list">
-      {files.map((file) => (
-        <li key={`${file.filename}-${file.content.slice(0, 12)}`}>
-          <a
-            className="email-attachment-link"
-            href={`data:${file.contentType};base64,${file.content}`}
-            download={file.filename}
-          >
-            <Icons.Attachment className="email-attachment-icon" />
-            <span className="email-attachment-name">{file.filename}</span>
-            <span className="email-attachment-size">
-              {formatBytes(file.content)}
-            </span>
-            <Icons.Download className="email-attachment-icon" />
-          </a>
-        </li>
-      ))}
+      {files.map((file) => {
+        const FileIcon = getFileIcon(file.filename);
+        return (
+          <li key={`${file.filename}-${file.content.slice(0, 12)}`}>
+            <a
+              className="email-attachment-link"
+              href={`data:${file.contentType};base64,${file.content}`}
+              download={file.filename}
+            >
+              <FileIcon className="email-attachment-icon" />
+              <span className="email-attachment-name">{file.filename}</span>
+              <span className="email-attachment-size">
+                {formatBytes(file.content)}
+              </span>
+              <Icons.Download className="email-attachment-icon" />
+            </a>
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -77,7 +101,6 @@ export function EmailRichBody({
           srcDoc={srcDoc}
           onLoad={handleLoad}
         />
-        <EmailAttachmentList attachments={attachments} />
       </div>
     );
   }
@@ -85,7 +108,6 @@ export function EmailRichBody({
   return (
     <div className="email-rich-body">
       <div className="email-plain-body">{text}</div>
-      <EmailAttachmentList attachments={attachments} />
     </div>
   );
 }

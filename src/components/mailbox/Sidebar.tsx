@@ -119,7 +119,7 @@ export function Sidebar() {
           {!isSidebarCollapsed ? (
             <>
               <div className="flex items-center">
-                <Icons.Mail className="w-5 h-5 mr-2 text-text-secondary" />
+                <Icons.SponsorcloudLogo className="w-5 h-5 mr-2" />
                 <span className="font-semibold text-sm">Mailbox</span>
               </div>
               <Button
@@ -371,7 +371,7 @@ export function Sidebar() {
         {/* Mobile Header */}
         <div className="h-14 flex items-center px-4 font-semibold border-b border-border text-primary-text justify-between">
           <div className="flex items-center">
-            <Icons.Mail className="w-5 h-5 mr-2 text-text-secondary" />
+            <Icons.SponsorcloudLogo className="w-5 h-5 mr-2" />
             <span className="font-semibold text-sm">Mailbox</span>
           </div>
           <Button

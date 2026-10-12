@@ -6,7 +6,7 @@ import { useRouter } from "next/navigation";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import { FeedbackBanner } from "@/components/ui/FeedbackBanner";
-import { EmailRichBody } from "@/components/mailbox/EmailRichBody";
+import { EmailRichBody, EmailAttachmentList } from "@/components/mailbox/EmailRichBody";
 import type { EmailWithState } from "@/types";
 
 function stripHtmlAndEntities(html: string | null | undefined): string {
@@ -358,6 +358,10 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
                   </div>
                 </div>
 
+                <div className="px-6 py-2">
+                  <EmailAttachmentList attachments={selectedEmail.attachments} />
+                </div>
+
                 <div className="flex-1 p-6 min-w-0 overflow-auto">
                   <EmailRichBody
                     html={selectedEmail.bodyHtml}
@@ -422,6 +426,10 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
                       </div>
                     </div>
                   </div>
+                </div>
+
+                <div className="px-4 py-2">
+                  <EmailAttachmentList attachments={selectedEmail.attachments} />
                 </div>
 
                 {/* Email Body */}
