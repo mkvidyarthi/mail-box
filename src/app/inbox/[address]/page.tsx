@@ -60,6 +60,8 @@ export default function PublicInboxPage({
   const [selectedEmail, setSelectedEmail] = useState<EmailWithState | null>(null);
   const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
+  const [authCredentials, setAuthCredentials] = useState<{ username: string; password: string } | null>(null);
+  const [showAuthDialog, setShowAuthDialog] = useState(false);
   
   // Unwrap params promise and decode URL-encoded address
   const { address } = use(params);
@@ -81,11 +83,18 @@ export default function PublicInboxPage({
       setLoading(true);
       setError(null);
 
-      const response = await fetch(`/api/public/inbox/${decodedAddress}`);
+      const headers: HeadersInit = {};
+      if (authCredentials) {
+        const authString = btoa(`${authCredentials.username}:${authCredentials.password}`);
+        headers['Authorization'] = `Basic ${authString}`;
+      }
+
+      const response = await fetch(`/api/public/inbox/${decodedAddress}`, { headers });
 
       if (!response.ok) {
         if (response.status === 401) {
-          // Basic Auth required
+          // Basic Auth required - show auth dialog
+          setShowAuthDialog(true);
           setError("Authentication required. Please provide Basic Auth credentials.");
           return;
         }
@@ -136,6 +145,68 @@ export default function PublicInboxPage({
           <div className="mt-4 flex justify-center">
             <Button onClick={handleRefresh}>Retry</Button>
           </div>
+        </div>
+      </div>
+    );
+  }
+
+  const handleAuthSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const username = formData.get('username') as string;
+    const password = formData.get('password') as string;
+    setAuthCredentials({ username, password });
+    setShowAuthDialog(false);
+    fetchInbox();
+  };
+
+  // Auth Dialog
+  if (showAuthDialog) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background p-4">
+        <div className="max-w-md w-full bg-surface border border-border rounded-lg p-6">
+          <h2 className="text-xl font-bold text-text-primary mb-4">Authentication Required</h2>
+          <p className="text-sm text-text-secondary mb-4">
+            This inbox requires basic authentication. Please enter your credentials.
+          </p>
+          <form onSubmit={handleAuthSubmit} className="space-y-4">
+            <div>
+              <label htmlFor="username" className="block text-sm font-medium text-text-primary mb-1">
+                Username
+              </label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                required
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-text-primary mb-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                required
+                className="w-full px-3 py-2 border border-border rounded-md bg-background text-text-primary focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button type="submit" className="flex-1">
+                Authenticate
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowAuthDialog(false)}
+              >
+                Cancel
+              </Button>
+            </div>
+          </form>
         </div>
       </div>
     );
