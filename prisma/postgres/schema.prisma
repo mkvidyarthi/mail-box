@@ -95,7 +95,7 @@ model Email {
   attachmentsJson  String? // JSON-encoded inbound attachments (base64)
   receivedAt       DateTime @default(now())
 
-  mailboxAddress MailboxAddress    @relation(fields: [mailboxAddressId], references: [id])
+  mailboxAddress MailboxAddress    @relation(fields: [mailboxAddressId], references: [id], onDelete: Cascade)
   readBy         UserReadEmail[]
   savedBy        UserSavedEmail[]
   trashedBy      UserTrashedEmail[]

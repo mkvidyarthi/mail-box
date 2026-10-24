@@ -2,6 +2,7 @@
   "name": "email-service",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
@@ -18,7 +19,8 @@
     "db:seed": "ts-node scripts/seed-emails.ts",
     "docker:up": "docker-compose up -d",
     "docker:down": "docker-compose down",
-    "docker:logs": "docker-compose logs -f"
+    "docker:logs": "docker-compose logs -f",
+    "cron:dev": "tsx scripts/cron-runner.ts"
   },
   "dependencies": {
     "@base-ui/react": "^1.6.0",
@@ -35,6 +37,7 @@
     "next": "^16.3.4",
     "next-intl": "^4.13.0",
     "next-themes": "^0.4.6",
+    "node-cron": "^4.6.0",
     "nodemailer": "^9.0.3",
     "pg": "^8.22.0",
     "prisma": "^6.12.0",
@@ -51,6 +54,7 @@
     "@tailwindcss/postcss": "^4",
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/node-cron": "^3.0.11",
     "@types/nodemailer": "^8.0.1",
     "@types/pg": "^8.20.0",
     "@types/react": "^19",
@@ -58,6 +62,15 @@
     "babel-plugin-react-compiler": "1.0.0",
     "tailwindcss": "^4",
     "ts-node": "^10.9.2",
+    "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "ts-node": {
+    "esm": true,
+    "experimentalSpecifierResolution": "node",
+    "compilerOptions": {
+      "module": "esnext",
+      "moduleResolution": "node"
+    }
   }
 }

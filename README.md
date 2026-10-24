@@ -105,6 +105,16 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) to view your new workspace.
 
+### 5. Run Local Cron Jobs (Optional)
+
+For local development, you can run scheduled cleanup jobs manually:
+
+```bash
+npm run cron:dev
+```
+
+This runs the mailbox cleanup job daily at midnight (matching the Vercel cron schedule). Press Ctrl+C to stop the cron runner.
+
 ---
 
 ## 🗄 Database Setup & Switching Architecture

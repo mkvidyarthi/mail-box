@@ -4,12 +4,15 @@ import { cleanupInactiveMailboxes, getInactiveMailboxStats } from "@/jobs/cleanu
 
 // ── POST /api/cron/cleanup ─────────────────────────────────────────────────
 // Cron job endpoint to clean up inactive mailboxes
-// Should be secured with WEBHOOK_SECRET or similar
+// Secured with either CRON_SECRET header or Vercel's x-vercel-cron header
 export async function POST(req: NextRequest) {
   try {
     // Verify cron secret for security
+    // Accept either custom secret header or Vercel's cron header
     const cronSecret = req.headers.get("x-cron-secret");
-    if (cronSecret !== process.env.CRON_SECRET) {
+    const vercelCron = req.headers.get("x-vercel-cron");
+    
+    if (cronSecret !== process.env.CRON_SECRET && !vercelCron) {
       return apiError("Unauthorized", 401);
     }
 
@@ -43,8 +46,11 @@ export async function POST(req: NextRequest) {
 export async function GET(req: NextRequest) {
   try {
     // Verify cron secret for security
+    // Accept either custom secret header or Vercel's cron header
     const cronSecret = req.headers.get("x-cron-secret");
-    if (cronSecret !== process.env.CRON_SECRET) {
+    const vercelCron = req.headers.get("x-vercel-cron");
+    
+    if (cronSecret !== process.env.CRON_SECRET && !vercelCron) {
       return apiError("Unauthorized", 401);
     }
 

@@ -35,18 +35,23 @@ export async function cleanupInactiveMailboxes(): Promise<CleanupResult> {
     console.log(`Starting mailbox cleanup...`);
     console.log(`Cutoff date: ${result.cutoffDate.toISOString()}`);
     console.log(`Dry run mode: ${result.dryRun}`);
+    console.log(`Protected emails: ${CRON_CONFIG.mailboxCleanup.protectedEmails.join(", ")}`);
 
-    // Find all mailboxes that haven't been accessed since the cutoff date
+    // Find all mailboxes that were created before the cutoff date
     const inactiveMailboxes = await prisma.mailboxAddress.findMany({
       where: {
-        accessedAt: {
+        createdAt: {
           lt: result.cutoffDate,
+        },
+        // Exclude protected email addresses
+        address: {
+          notIn: CRON_CONFIG.mailboxCleanup.protectedEmails,
         },
       },
       select: {
         id: true,
         address: true,
-        accessedAt: true,
+        createdAt: true,
         _count: {
           select: {
             emails: true,
@@ -61,7 +66,7 @@ export async function cleanupInactiveMailboxes(): Promise<CleanupResult> {
       try {
         const emailCount = mailbox._count.emails;
         console.log(
-          `Processing mailbox: ${mailbox.address} (${emailCount} emails, last accessed: ${mailbox.accessedAt.toISOString()})`,
+          `Processing mailbox: ${mailbox.address} (${emailCount} emails, created: ${mailbox.createdAt.toISOString()})`,
         );
 
         if (result.dryRun) {
@@ -117,7 +122,7 @@ export async function getInactiveMailboxStats(): Promise<{
     prisma.mailboxAddress.count(),
     prisma.mailboxAddress.count({
       where: {
-        accessedAt: {
+        createdAt: {
           lt: cutoffDate,
         },
       },
@@ -127,7 +132,7 @@ export async function getInactiveMailboxStats(): Promise<{
   // Get total email count for inactive mailboxes
   const inactiveMailboxesWithEmails = await prisma.mailboxAddress.findMany({
     where: {
-      accessedAt: {
+      createdAt: {
         lt: cutoffDate,
       },
     },
