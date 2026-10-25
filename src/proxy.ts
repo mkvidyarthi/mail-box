@@ -1,6 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { AUTH_CONFIG } from "@/lib/auth";
 
+// Cache setup status to avoid repeated database queries
+let setupStatusCache: { hasOwner: boolean; timestamp: number } | null = null;
+const SETUP_STATUS_CACHE_TTL = 5000; // 5 seconds
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -33,21 +37,30 @@ export async function proxy(request: NextRequest) {
 
   // 1. Check setup status via internal API endpoint (runs in Node.js runtime)
   let hasOwner = true;
-  try {
-    // Use localhost for internal fetch to avoid SSL issues with tunnels
-    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
-    const host = process.env.NODE_ENV === 'production' ? request.nextUrl.host : 'localhost:3000';
-    const baseUrl = `${protocol}://${host}`;
-    const statusUrl = new URL("/api/setup/status", baseUrl);
-    const res = await fetch(statusUrl.toString(), {
-      cache: "no-store",
-    });
-    if (res.ok) {
-      const body = await res.json();
-      hasOwner = body.data?.hasOwner ?? true;
+  const now = Date.now();
+  
+  // Use cached value if available and not expired
+  if (setupStatusCache && (now - setupStatusCache.timestamp) < SETUP_STATUS_CACHE_TTL) {
+    hasOwner = setupStatusCache.hasOwner;
+  } else {
+    try {
+      // Use localhost for internal fetch to avoid SSL issues with tunnels
+      const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+      const host = process.env.NODE_ENV === 'production' ? request.nextUrl.host : 'localhost:3000';
+      const baseUrl = `${protocol}://${host}`;
+      const statusUrl = new URL("/api/setup/status", baseUrl);
+      const res = await fetch(statusUrl.toString(), {
+        cache: "no-store",
+      });
+      if (res.ok) {
+        const body = await res.json();
+        hasOwner = body.data?.hasOwner ?? true;
+        // Update cache
+        setupStatusCache = { hasOwner, timestamp: now };
+      }
+    } catch (error) {
+      console.error("Failed to query setup status in proxy:", error);
     }
-  } catch (error) {
-    console.error("Failed to query setup status in proxy:", error);
   }
 
   // 2. Redirect to setup page if no owner accounts exist in the database

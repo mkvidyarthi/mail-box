@@ -306,15 +306,50 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
       {/* Split View */}
   <div className="flex-1 max-w-7xl mx-auto w-full px-3 sm:px-6 lg:px-8 py-1 overflow-hidden">
     {data.emails.length === 0 ? (
-      <div className="text-center py-12">
-        <Icons.Mail className="w-16 h-16 text-text-muted mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-text-primary mb-2">
-          No emails yet
-        </h3>
-        <p className="text-text-secondary">
-          Send an email to {decodedAddress} to see it appear here.
-        </p>
-      </div>
+      <>
+        {/* Desktop Empty State */}
+        <div className="hidden md:flex h-full gap-4 overflow-hidden">
+          {/* Left Empty Panel */}
+          <div className="w-[400px] lg:w-[450px] bg-surface border border-border rounded-lg overflow-hidden flex flex-col shrink-0">
+            <div className="p-3 border-b border-border bg-surface shrink-0">
+              <h2 className="text-sm font-semibold text-text-primary">
+                Inbox (0)
+              </h2>
+            </div>
+            <div className="flex-1 flex items-center justify-center text-text-secondary">
+              <div className="text-center">
+                <Icons.Mail className="w-12 h-12 mx-auto mb-3 text-text-muted" />
+                <p className="text-sm">No emails yet</p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Empty Panel */}
+          <div className="flex-1 min-w-0 bg-surface border border-border rounded-lg overflow-hidden">
+            <div className="flex items-center justify-center h-full text-text-secondary">
+              <div className="text-center">
+                <Icons.Mail className="w-12 h-12 mx-auto mb-3 text-text-muted" />
+                <p className="text-sm">Send an email to {decodedAddress} to see it appear here.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Mobile Empty State */}
+        <div className="md:hidden h-full flex flex-col overflow-hidden">
+          <div className="flex-1 min-h-0 bg-surface border border-border rounded-lg overflow-hidden flex flex-col">
+            <div className="flex items-center justify-center h-full text-text-secondary">
+              <div className="text-center">
+                <Icons.Mail className="w-12 h-12 mx-auto mb-3 text-text-muted" />
+                <p className="text-sm">No emails yet</p>
+                <p className="text-xs text-text-secondary mt-2">
+                  Send an email to {decodedAddress} to see it appear here.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </>
     ) : (
       <>
         {/* ============================= */}

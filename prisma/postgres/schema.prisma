@@ -1,9 +1,11 @@
 generator client {
   provider = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
 }
 
 datasource db {
   provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 // ─────────────────────────────────────────
@@ -62,7 +64,7 @@ model MailboxAddress {
   createdFromIp    String?
   createdAt        DateTime @default(now())
 
-  emails Email[]
+  emails     Email[]
   userAccess UserMailboxAccess[]
   drafts     Draft[]
 }
@@ -95,13 +97,15 @@ model Email {
   attachmentsJson  String? // JSON-encoded inbound attachments (base64)
   receivedAt       DateTime @default(now())
 
-  mailboxAddress MailboxAddress    @relation(fields: [mailboxAddressId], references: [id], onDelete: Cascade)
+  mailboxAddress MailboxAddress          @relation(fields: [mailboxAddressId], references: [id], onDelete: Cascade)
   readBy         UserReadEmail[]
   savedBy        UserSavedEmail[]
   trashedBy      UserTrashedEmail[]
   webhookEvents  ProcessedWebhookEvent[]
 }
 
+/// Idempotency key for inbound Cloudflare webhook deliveries.
+/// Survives email deletion so a provider retry cannot recreate the message.
 model ProcessedWebhookEvent {
   id        String   @id @default(cuid())
   eventKey  String   @unique
@@ -125,9 +129,9 @@ model UserReadEmail {
 
 /// Row exists = this user has saved/starred this email.
 model UserSavedEmail {
-  userId   String
-  emailId  String
-  savedAt  DateTime @default(now())
+  userId  String
+  emailId String
+  savedAt DateTime @default(now())
 
   user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
   email Email @relation(fields: [emailId], references: [id], onDelete: Cascade)
@@ -157,9 +161,9 @@ model EmailJob {
   bodyText        String
   bodyHtml        String?
   fromAddress     String?
-  attachmentsJson String?   // JSON-encoded MailAttachment[]
+  attachmentsJson String? // JSON-encoded MailAttachment[]
   status          String    @default("PENDING") // PENDING, PROCESSING, SENT, FAILED
-  priority        Int       @default(2)         // 1: LOW, 2: DEFAULT, 3: HIGH
+  priority        Int       @default(2) // 1: LOW, 2: DEFAULT, 3: HIGH
   attempts        Int       @default(0)
   error           String?
   createdAt       DateTime  @default(now())
@@ -177,7 +181,7 @@ model Draft {
   subject          String?
   bodyText         String?
   bodyHtml         String?
-  attachmentsJson  String?  // JSON-encoded MailAttachment[]
+  attachmentsJson  String? // JSON-encoded MailAttachment[]
   createdAt        DateTime @default(now())
   updatedAt        DateTime @updatedAt
 
