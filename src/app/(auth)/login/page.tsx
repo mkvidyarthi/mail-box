@@ -95,6 +95,19 @@ export default function LoginPage() {
         >
           {loading ? "Loading..." : "Open Inbox"}
         </Button>
+
+        <div className="text-center mt-2">
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              router.push("/admin-login");
+            }}
+            className="text-[12px] text-text-secondary hover:text-text-primary transition-colors"
+          >
+            Admin Login
+          </button>
+        </div>
       </form>
     </div>
   );

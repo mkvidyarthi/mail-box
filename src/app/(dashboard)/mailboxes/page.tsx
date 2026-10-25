@@ -3,6 +3,7 @@
 import { useTranslations } from "next-intl";
 import type React from "react";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Icons } from "@/components/icons";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
@@ -21,6 +22,7 @@ import type { MailboxAddress } from "@/types";
 
 export default function MailboxesPage() {
   const t = useTranslations("Mailboxes");
+  const router = useRouter();
   const { data: userData } = useMeQuery();
   const { addToast } = useAppStore();
 
@@ -166,6 +168,12 @@ export default function MailboxesPage() {
               {t("title")}
             </h1>
             <p className="text-[13px] text-text-secondary">{t("subtitle")}</p>
+            <button
+              onClick={() => router.push("/login")}
+              className="text-[12px] text-text-secondary hover:text-text-primary transition-colors mt-1 w-fit"
+            >
+              Go Back to Disposable Mailbox
+            </button>
           </div>
           {!isMember && (
             <Button

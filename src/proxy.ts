@@ -84,8 +84,9 @@ export async function proxy(request: NextRequest) {
     pathname === "/login" ||
     pathname === "/forgot-password" ||
     pathname === "/reset-password" ||
-    pathname === "/accept-invite";
-  
+    pathname === "/accept-invite" ||
+    pathname === "/admin-login";
+
   // Allow public access to inbox routes without session authentication (YOPmail-style)
   const isInboxRoute = pathname.startsWith("/inbox/");
 
@@ -95,10 +96,9 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
   } else {
-    // Authenticated: redirect to dashboard home if accessing login or reset pages
-    if (isAuthPage) {
-      return NextResponse.redirect(new URL("/", request.url));
-    }
+    // Authenticated: allow access to auth pages (for logout functionality)
+    // Don't redirect away from auth pages to prevent refresh loops
+    // Only redirect from auth pages if explicitly accessing /login (which shouldn't happen for logged-in users)
   }
 
   return NextResponse.next();
