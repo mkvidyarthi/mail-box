@@ -276,6 +276,7 @@ const groupedEmailEntries = Object.entries(groupedEmails).sort(([, emailsA], [, 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <div>
+              <Icons.SponsorcloudLogo className="w-15 h-9 mr-2" />
               <h1 className="text-2xl font-bold text-text-primary">
                 {decodedAddress.split("@")[0]}
               </h1>

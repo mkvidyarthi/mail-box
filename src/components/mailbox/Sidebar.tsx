@@ -119,8 +119,8 @@ export function Sidebar() {
           {!isSidebarCollapsed ? (
             <>
               <div className="flex items-center">
-                <Icons.SponsorcloudLogo className="w-5 h-5 mr-2" />
-                <span className="font-semibold text-sm">Mailbox</span>
+                <Icons.SponsorcloudLogo className="w-11 h-11 mr-2" />
+                <span className="font-semibold text-sm"></span>
               </div>
               <Button
                 variant="ghost"
